@@ -15,6 +15,8 @@ import java.io.InputStreamReader;
 
 public class MainActivity extends AppCompatActivity{
 
+    private TextView tv;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -23,37 +25,59 @@ public class MainActivity extends AppCompatActivity{
         Button butt=(Button)findViewById(R.id.button);
         butt.setOnClickListener(new Button.OnClickListener(){
             public void onClick(View v) {
-                TextView tv=(TextView)findViewById(R.id.textbox);
-                tv.setText("Output :"+"\n"+runAsRoot());
+                tv=(TextView)findViewById(R.id.textbox);
+                Run P = new Run();
+                new Thread(P).start();
             }
         });
     }
-    public String runAsRoot() {
 
-        try {
-            // Executes the command.
-            Process process = Runtime.getRuntime().exec("pm compile -m everything -f -a");
+    class Run implements Runnable{
 
-            // Reads stdout.
-            // NOTE: You can write to stdin of the command using
-            //       process.getOutputStream().
-            BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(process.getInputStream()));
 
-            int read;
-            char[] buffer = new char[4096];
-            StringBuffer output = new StringBuffer();
-            while ((read = reader.read(buffer)) > 0) {
-                output.append(buffer, 0, read);
 
+        @Override
+        public void run() {
+            try {
+
+                Process process = Runtime.getRuntime().exec("pm compile -m speed-profile -f com.android.traceur -a");
+
+                // Reads stdout.
+                // NOTE: You can write to stdin of the command using
+                //       process.getOutputStream().
+                BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(process.getInputStream()));
+                int read;
+                char[] buffer = new char[4096];
+                StringBuffer output = new StringBuffer();
+                while ((read = reader.read(buffer)) > 0) {
+                    output.append(buffer, 0, read);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            tv.setText(output.toString());
+                        }
+                    });
+                }
+                reader.close();
+                process.waitFor();
+//                while (process.waitFor()!=0){
+//                    runOnUiThread(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            tv.setText(output);
+//                        }
+//                    });
+//                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
-            reader.close();
-            process.waitFor();
-            return output.toString();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
         }
     }
+
+//    public String runAsRoot(){
+//
+//    }
 }
